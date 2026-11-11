@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-temp
+  namespace: bakchago
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-temp }
+  template:
+    metadata:
+      labels: { app: postgres-temp }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: bakchago
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: bakchago-db, key: username }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: bakchago-db, key: password }
+          ports:
+            - containerPort: 5432
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-temp
+  namespace: bakchago
+spec:
+  selector: { app: postgres-temp }
+  ports:
+    - port: 5432
+      targetPort: 5432

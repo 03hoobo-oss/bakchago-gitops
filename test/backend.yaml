@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: bakchago
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: backend
+          image: 438465148189.dkr.ecr.ap-northeast-2.amazonaws.com/bakchago-backend:test-2
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: bakchago-db-config
+          env:
+            - name: APP_VERSION
+              value: "test-2"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: { name: bakchago-db, key: username }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: bakchago-db, key: password }
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8080 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: bakchago
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 8080
+      targetPort: 8080

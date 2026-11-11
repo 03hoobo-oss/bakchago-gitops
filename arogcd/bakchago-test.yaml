@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bakchago-test
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/03hoobo-oss/bakchago-gitops.git
+    targetRevision: main
+    path: test
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bakchago
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
